@@ -1,0 +1,54 @@
+version: "3"
+services:
+  es01:
+    build: ./elasticsearch
+    container_name: es01
+    environment:
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+    volumes:
+      - "es_data:/usr/share/elasticsearch/data"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.16.2
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://es01:9200
+    depends_on:
+      - es01
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.0.0
+    ports:
+      - "12201:12201/udp"
+    volumes:
+      - "./logstash/pipeline:/usr/share/logstash/pipeline"
+    #  - "./data/nginx/log:/var/log/nginx"
+    depends_on:
+      - es01
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    #volumes:
+    #  - "./data/nginx/log:/var/log/nginx"
+    logging:
+      driver: gelf
+      options:
+        gelf-address: udp://localhost:12201
+        tag: "docker.{{.Name}}"
+    depends_on:
+      - es01
+
+volumes:
+  es_data:
+    driver: local
