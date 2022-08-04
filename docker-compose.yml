@@ -27,10 +27,12 @@ services:
 
   logstash:
     image: docker.elastic.co/logstash/logstash:8.3.3
+    user: "0:0"
     ports:
       - "12201:12201/udp"
     volumes:
       - "./logstash/pipeline:/usr/share/logstash/pipeline"
+      - "./data/logstash/:/usr/share/logstash/output_logstash"
     #  - "./data/nginx/log:/var/log/nginx"
     depends_on:
       - es01
